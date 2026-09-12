@@ -1,7 +1,7 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import '../../providers/motorcycle_provider.dart';
 
 class MapScreen extends StatefulWidget {
@@ -12,7 +12,7 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> {
-  final Completer<GoogleMapController> _mapController = Completer<GoogleMapController>();
+  final MapController _mapController = MapController();
   LatLng? _lastPosition;
   bool _showGeofenceConfigPanel = false;
 
@@ -26,72 +26,90 @@ class _MapScreenState extends State<MapScreen> {
         ? LatLng(telemetry.lat, telemetry.lng)
         : const LatLng(34.052234, -118.243684);
 
-    // If coordinate has changed, animate the map camera to center on the vehicle
+    // If coordinate has changed, move the map camera to center on the vehicle
     if (telemetry != null && _lastPosition != vehicleLatLng) {
       _lastPosition = vehicleLatLng;
-      _animateCamera(vehicleLatLng);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _mapController.move(vehicleLatLng, 16.5);
+      });
     }
-
-    // Set of markers to place on the map
-    final Set<Marker> markers = {
-      Marker(
-        markerId: const MarkerId('motorcycle_marker'),
-        position: vehicleLatLng,
-        icon: BitmapDescriptor.defaultMarkerWithHue(
-          provider.isArmed ? BitmapDescriptor.hueRed : BitmapDescriptor.hueAzure,
-        ),
-        infoWindow: InfoWindow(
-          title: 'Motorcycle Location',
-          snippet: telemetry != null
-              ? 'Speed: ${telemetry.speed.toStringAsFixed(1)} km/h | Satellites: ${telemetry.satellites}'
-              : 'Acquiring GPS Signal...',
-        ),
-      ),
-      // Geofence Center Pin Marker (shown when configuring geofence)
-      if (provider.geofenceEnabled)
-        Marker(
-          markerId: const MarkerId('geofence_center_marker'),
-          position: LatLng(provider.geofenceLat, provider.geofenceLng),
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
-          infoWindow: InfoWindow(
-            title: 'Geofence Guard Center',
-            snippet: 'Radius: ${provider.geofenceRadiusMeters.toInt()}m',
-          ),
-        ),
-    };
-
-    // Geofencing perimeter circle representation
-    final Set<Circle> circles = {
-      if (provider.geofenceEnabled)
-        Circle(
-          circleId: const CircleId('anti_theft_geofence'),
-          center: LatLng(provider.geofenceLat, provider.geofenceLng),
-          radius: provider.geofenceRadiusMeters,
-          strokeWidth: 2,
-          strokeColor: provider.isArmed ? Colors.red.withOpacity(0.6) : Colors.amber.withOpacity(0.5),
-          fillColor: provider.isArmed ? Colors.red.withOpacity(0.12) : Colors.amber.withOpacity(0.08),
-        )
-    };
 
     return Scaffold(
       body: Stack(
         children: [
-          // Google Map Widget
-          GoogleMap(
-            mapType: MapType.normal,
-            initialCameraPosition: CameraPosition(
-              target: vehicleLatLng,
-              zoom: 16.5,
+          // OpenStreetMap Widget using flutter_map (100% Free, Cardless, No API Keys required!)
+          FlutterMap(
+            mapController: _mapController,
+            options: MapOptions(
+              initialCenter: vehicleLatLng,
+              initialZoom: 16.5,
+              interactionOptions: const InteractionOptions(
+                flags: InteractiveFlag.all,
+              ),
             ),
-            markers: markers,
-            circles: circles,
-            zoomControlsEnabled: false,
-            myLocationButtonEnabled: false,
-            onMapCreated: (GoogleMapController controller) {
-              if (!_mapController.isCompleted) {
-                _mapController.complete(controller);
-              }
-            },
+            children: [
+              // OpenStreetMap Dark/Standard tile layer
+              TileLayer(
+                urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                subdomains: const ['a', 'b', 'c'],
+                userAgentPackageName: 'com.amirasha3BAAN.motorcycle_tracker',
+              ),
+
+              // Geofencing perimeter circle representation
+              if (provider.geofenceEnabled)
+                CircleLayer(
+                  circles: [
+                    CircleMarker(
+                      point: LatLng(provider.geofenceLat, provider.geofenceLng),
+                      radius: provider.geofenceRadiusMeters,
+                      useRadiusInMeter: true,
+                      color: provider.isArmed ? Colors.red.withOpacity(0.12) : Colors.amber.withOpacity(0.08),
+                      borderColor: provider.isArmed ? Colors.red.withOpacity(0.6) : Colors.amber.withOpacity(0.5),
+                      borderStrokeWidth: 2,
+                    ),
+                  ],
+                ),
+
+              // Markers Layer (Motorcycle and Geofence Center Pin)
+              MarkerLayer(
+                markers: [
+                  // Motorcycle marker
+                  Marker(
+                    point: vehicleLatLng,
+                    width: 45.0,
+                    height: 45.0,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: provider.isArmed ? Colors.red.withOpacity(0.2) : Colors.blue.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: provider.isArmed ? Colors.redAccent : Colors.cyanAccent,
+                          width: 2,
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.motorcycle,
+                        color: provider.isArmed ? Colors.redAccent : Colors.cyanAccent,
+                        size: 24.0,
+                      ),
+                    ),
+                  ),
+
+                  // Geofence Center Pin Marker (shown when geofence is enabled)
+                  if (provider.geofenceEnabled)
+                    Marker(
+                      point: LatLng(provider.geofenceLat, provider.geofenceLng),
+                      width: 40.0,
+                      height: 40.0,
+                      child: const Icon(
+                        Icons.location_on,
+                        color: Colors.orange,
+                        size: 36.0,
+                      ),
+                    ),
+                ],
+              ),
+            ],
           ),
 
           // Custom floating overlays for styling
@@ -104,19 +122,6 @@ class _MapScreenState extends State<MapScreen> {
         ],
       ),
     );
-  }
-
-  Future<void> _animateCamera(LatLng target) async {
-    try {
-      final GoogleMapController controller = await _mapController.future;
-      await controller.animateCamera(
-        CameraUpdate.newCameraPosition(
-          CameraPosition(target: target, zoom: 16.5, tilt: 35.0),
-        ),
-      );
-    } catch (e) {
-      print('[Map Error] Failed to animate camera: $e');
-    }
   }
 
   Widget _buildFloatingHeader(MotorcycleProvider provider) {
