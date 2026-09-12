@@ -1,8 +1,16 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 
 class FCMNotificationService {
-  final FirebaseMessaging _fcm = FirebaseMessaging.instance;
   final String _deviceId = 'MOTO-ESP32-98A7B6';
+
+  // Safely retrieve the FirebaseMessaging instance lazily to prevent crashing on boot if Firebase is not initialized
+  FirebaseMessaging? get _fcm {
+    try {
+      return FirebaseMessaging.instance;
+    } catch (_) {
+      return null;
+    }
+  }
 
   static Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     print('📦 [FCM Background Message] ID: ${message.messageId}');
@@ -13,9 +21,15 @@ class FCMNotificationService {
   }
 
   Future<void> initialize() async {
+    final fcm = _fcm;
+    if (fcm == null) {
+      print('[FCM Service] Skipping registration (running in local standalone mode without Firebase initialization)');
+      return;
+    }
+
     try {
       // 1. Request notifications permission for iOS / Android 13+
-      NotificationSettings settings = await _fcm.requestPermission(
+      NotificationSettings settings = await fcm.requestPermission(
         alert: true,
         announcement: false,
         badge: true,
@@ -28,7 +42,7 @@ class FCMNotificationService {
       print('[FCM] Notification authorization status: ${settings.authorizationStatus}');
 
       // 2. Fetch the registration token (for target device debugging)
-      String? token = await _fcm.getToken();
+      String? token = await fcm.getToken();
       print('[FCM Token] Your Device Token: $token');
 
       // 3. Register background handler
@@ -50,7 +64,7 @@ class FCMNotificationService {
 
       // 6. Automatically subscribe to this motorcycle's specific alert topic
       final String alertTopic = 'alerts_$_deviceId';
-      await _fcm.subscribeToTopic(alertTopic);
+      await fcm.subscribeToTopic(alertTopic);
       print('[FCM] Subscribed successfully to topic: "$alertTopic"');
 
     } catch (e) {
