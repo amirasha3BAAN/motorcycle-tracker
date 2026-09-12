@@ -1,6 +1,7 @@
 import express from 'express';
 import { createServer } from 'http';
 import * as dotenv from 'dotenv';
+import cors from 'cors';
 import { initializeMQTT, sendCommand } from './mqtt/listener';
 import { saveTelemetry, saveAlert } from './services/dbService';
 import { initializeWebSockets, getDatabase } from './config/firebase';
@@ -10,6 +11,7 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 3000;
 
+app.use(cors());
 app.use(express.json());
 
 // Create native HTTP server and attach Express
