@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../providers/motorcycle_provider.dart';
+import '../../domain/models/telemetry_model.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({Key? key}) : super(key: key);
@@ -180,7 +181,7 @@ class DashboardScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF1E1E1E),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white05),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -234,7 +235,7 @@ class DashboardScreen extends StatelessWidget {
       color: const Color(0xFF1E1E1E),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: isArmed ? Colors.redAccent.withOpacity(0.3) : Colors.white05),
+        side: BorderSide(color: isArmed ? Colors.redAccent.withOpacity(0.3) : Colors.white.withOpacity(0.05)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -272,7 +273,7 @@ class DashboardScreen extends StatelessWidget {
                 ),
               ],
             ),
-            const Divider(color: Colors.white05, height: 24),
+            Divider(color: Colors.white.withOpacity(0.05), height: 24),
             Row(
               children: [
                 Expanded(
@@ -322,7 +323,7 @@ class DashboardScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF1E1E1E),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white05),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -370,7 +371,7 @@ class DashboardScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF1E1E1E),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white05),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
       ),
       child: Row(
         children: [

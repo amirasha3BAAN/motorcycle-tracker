@@ -78,7 +78,7 @@ class _MapScreenState extends State<MapScreen> {
         children: [
           // Google Map Widget
           GoogleMap(
-            mapType: MapType.dark,
+            mapType: MapType.normal,
             initialCameraPosition: CameraPosition(
               target: vehicleLatLng,
               zoom: 16.5,
@@ -348,7 +348,7 @@ class _MapScreenState extends State<MapScreen> {
             const SizedBox(height: 12),
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
-                backgroundColor: provider.geofenceEnabled ? Colors.white10 : Colors.white05,
+                backgroundColor: provider.geofenceEnabled ? Colors.white10 : Colors.white.withOpacity(0.05),
                 foregroundColor: provider.geofenceEnabled ? Colors.white : Colors.grey,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),

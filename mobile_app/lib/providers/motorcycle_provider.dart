@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:web_socket_channel/web_socket_channel.dart';
 import '../domain/models/telemetry_model.dart';
 import '../domain/models/alert_model.dart';
 
@@ -11,7 +11,7 @@ class MotorcycleProvider with ChangeNotifier {
   final String _deviceId = 'MOTO-ESP32-98A7B6';
   
   // Update this to your live Render Backend URL when deploying (e.g. 'https://motorcycle-tracker-backend.onrender.com')
-  final String _backendBaseUrl = 'http://localhost:3000'; 
+  final String _backendBaseUrl = 'https://motorcycle-tracker-backend.onrender.com'; 
 
   // Real-time states
   Telemetry? _currentTelemetry;
@@ -27,7 +27,7 @@ class MotorcycleProvider with ChangeNotifier {
   bool _geofenceEnabled = true;
 
   // WebSockets & HTTP
-  WebSocket? _webSocket;
+  WebSocketChannel? _channel;
   bool _isReconnecting = false;
 
   // Simulation timer
@@ -107,7 +107,7 @@ class MotorcycleProvider with ChangeNotifier {
   }
 
   /// Sets up continuous WebSocket connection for low-latency live telemetry updates
-  void _connectWebSocket() async {
+  void _connectWebSocket() {
     if (_isReconnecting) return;
     
     try {
@@ -115,13 +115,13 @@ class MotorcycleProvider with ChangeNotifier {
       final wsUrl = _backendBaseUrl.replaceFirst('https', 'wss').replaceFirst('http', 'ws') + '/ws';
       print('[WebSocket] Connecting to real-time stream at: $wsUrl');
 
-      _webSocket = await WebSocket.connect(wsUrl).timeout(const Duration(seconds: 5));
+      _channel = WebSocketChannel.connect(Uri.parse(wsUrl));
       _isConnected = true;
       _isReconnecting = false;
       notifyListeners();
-      print('[WebSocket Connected] Live stream established successfully.');
+      print('[WebSocket Connected] Live stream channel created.');
 
-      _webSocket!.listen(
+      _channel!.stream.listen(
         (message) {
           try {
             final payload = jsonDecode(message);
@@ -153,7 +153,6 @@ class MotorcycleProvider with ChangeNotifier {
               notifyListeners();
             } else if (path == 'alerts/notifications') {
               print('[FCM Push Broadcast Received via WebSockets] Title: ${data['title']}, Body: ${data['body']}');
-              // Optionally display in-app notifications
             }
           } catch (err) {
             print('[WebSocket Error] Failed to process incoming message: $err');
@@ -399,7 +398,7 @@ class MotorcycleProvider with ChangeNotifier {
 
   @override
   void dispose() {
-    _webSocket?.close();
+    _channel?.sink.close();
     _simulationTimer?.cancel();
     super.dispose();
   }
