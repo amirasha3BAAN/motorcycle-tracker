@@ -1,0 +1,35 @@
+name: motorcycle_tracker
+description: Real-time motorcycle tracking and anti-theft emergency system.
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State Management & DI
+  provider: ^6.1.2
+
+  # Maps & Navigation
+  google_maps_flutter: ^2.5.3
+
+  # Firebase Plugins
+  firebase_core: ^2.27.0
+  firebase_auth: ^4.17.8
+  firebase_database: ^10.4.9
+  firebase_messaging: ^14.7.19
+
+  # UI & Utility
+  cupertino_icons: ^1.0.6
+  intl: ^0.19.0
+  http: ^1.2.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
